@@ -6,5 +6,5 @@ do
 data_path=$data_dir/$data_name
 save_path=$save_dir/$data_name
 echo $data_path, $save_path
-python create_hdf5.py --data_path $data_path --save_path $save_path --clip_object --clip_gripper --clip_pyft --clip_base --render_gripper_num 10000 --render_pyft_num 10000 --voxel_size 0.001 --pc_num 10000
+python create_hdf5.py --data_path $data_path --save_path $save_path --clip_object --clip_pyft --clip_base --render_pyft_num 10000 --voxel_size 0.001 --pc_num 10000
 done

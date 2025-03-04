@@ -1,10 +1,8 @@
 data_path = ./peel_data/01
 save_path = ./post_peel_data/01
 clip_object = True
-clip_gripper = True
 clip_pyft = True
 clip_base = True
-render_gripper_num = 10000
 render_pyft_num = 10000
 voxel_size = 0.001
 pc_num = 10000

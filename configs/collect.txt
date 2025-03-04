@@ -1,9 +1,8 @@
 save_path = ./peel_data/20
 l515_id = f0172289
-t265l_id = 230222110234
-t265r_id = 230322111188
+t265_id = 230222110234
 pyft_id = 192.168.1.10
 pyft_port = 49152
-pyft_tare_path = ./pre_peel_data/20240830
+pyft_tare_path = ./pre_peel_data/20240921
 angler_id = /dev/ttyUSB0
-angler_index = 2
+angler_index = 1

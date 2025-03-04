@@ -21,7 +21,7 @@ For more information, please visit our [project website](https://forcemimic.gith
 ---
 
 ## Hardware
-Download the fixed-tool version assets from [Onshape](https://cad.onshape.com/documents/a8dc2f65bd1ae816592e5c51/w/cf0c50fb046b5fe4d6c55a08/e/2a83c3cca3f56ae2baac3a15) and print them as needed.
+Download the gripper version assets from [Onshape](https://cad.onshape.com/documents/ff57e837127e412ad53233b7/w/58ebd799331aa3086c679da1/e/45a87e447238535d02d03e72) and print them as needed.
 The force-torque sensor used here is an inner product by [Flexiv](https://www.flexiv.com/), but you can easily replace it with a commonly-used alternative, like [ATI](https://www.ati-ia.com/Products/ft/sensors.aspx).
 The SLAM camera used here is [Intel RealSense T265](https://www.intelrealsense.com/tracking-camera-t265/), and the observation camera used here is [Intel RealSense L515](https://www.intelrealsense.com/lidar-camera-l515/), while they are [discontinued](https://www.intelrealsense.com/message-to-customers/). And the angle encoder used here is by [pdcd](http://www.dgpdcdkj.com/).
 
@@ -29,7 +29,8 @@ The SLAM camera used here is [Intel RealSense T265](https://www.intelrealsense.c
 ```bash
 git clone git@github.com:ForceMimic/forcecapture.git --recurse-submodules
 cd forcecapture
-# `main` branch for fixed-tool version, `git checkout gripper` to `gripper` branch for gripper version
+# `main` branch for fixed-tool version, `gripper` branch for gripper version
+git checkout gripper
 
 conda create -n focap python=3.10
 conda activate focap

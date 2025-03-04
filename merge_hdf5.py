@@ -22,8 +22,6 @@ def config_parse() -> configargparse.Namespace:
     parser.add_argument('--pad_o', action='store_true')
     parser.add_argument('--pad_a', action='store_true')
     parser.add_argument('--pad_aa', action='store_true')
-    parser.add_argument('--gripper_xyz_threshold', type=float)
-    parser.add_argument('--gripper_quat_threshold', type=float)
     parser.add_argument('--pyft_xyz_threshold', type=float)
     parser.add_argument('--pyft_quat_threshold', type=float)
     parser.add_argument('--pyft_f_threshold', type=float)
@@ -47,8 +45,6 @@ def main(args):
     pad_a = args.pad_a
     pad_aa = args.pad_aa
     filter_thresholds = {
-        'gripper_xyz_threshold': args.gripper_xyz_threshold,
-        'gripper_quat_threshold': args.gripper_quat_threshold,
         'pyft_xyz_threshold': args.pyft_xyz_threshold,
         'pyft_quat_threshold': args.pyft_quat_threshold,
         'pyft_f_threshold': args.pyft_f_threshold,
@@ -96,8 +92,6 @@ def main(args):
                 else:
                     l515_pc_xyzs_l515_o = data_o_group['l515_pc_xyzs_l515'][:].astype(np.float32)
                     l515_pc_rgbs_o = data_o_group['l515_pc_rgbs'][:].astype(np.float32)
-                gripper_xyzs_l515_o = data_o_group['gripper_xyzs_l515'][:].astype(np.float32)
-                gripper_quats_l515_o = data_o_group['gripper_quats_l515'][:].astype(np.float32)
                 pyft_xyzs_l515_o = data_o_group['pyft_xyzs_l515'][:].astype(np.float32)
                 pyft_quats_l515_o = data_o_group['pyft_quats_l515'][:].astype(np.float32)
                 if ft_coord:
@@ -113,15 +107,11 @@ def main(args):
                 lidx, ridx = 0, 0
                 selected_idxs = [0]
                 while ridx < num_samples:
-                    delta_gripper_xyz = delta_xyz(gripper_xyzs_l515_o[ridx], gripper_xyzs_l515_o[lidx])
-                    delta_gripper_quat = delta_quat(gripper_quats_l515_o[ridx], gripper_quats_l515_o[lidx]) / np.pi * 180
                     delta_pyft_xyz = delta_xyz(pyft_xyzs_l515_o[ridx], pyft_xyzs_l515_o[lidx])
                     delta_pyft_quat = delta_quat(pyft_quats_l515_o[ridx], pyft_quats_l515_o[lidx]) / np.pi * 180
                     delta_pyft_f = delta_xyz(pyft_fs_o[ridx], pyft_fs_o[lidx])
                     delta_pyft_t = delta_xyz(pyft_ts_o[ridx], pyft_ts_o[lidx])
-                    if (delta_gripper_xyz > filter_thresholds['gripper_xyz_threshold'] and filter_thresholds['gripper_xyz_threshold'] != 0) or \
-                        (delta_gripper_quat > filter_thresholds['gripper_quat_threshold'] and filter_thresholds['gripper_quat_threshold'] != 0) or \
-                        (delta_pyft_xyz > filter_thresholds['pyft_xyz_threshold'] and filter_thresholds['pyft_xyz_threshold'] != 0) or \
+                    if (delta_pyft_xyz > filter_thresholds['pyft_xyz_threshold'] and filter_thresholds['pyft_xyz_threshold'] != 0) or \
                         (delta_pyft_quat > filter_thresholds['pyft_quat_threshold'] and filter_thresholds['pyft_quat_threshold'] != 0) or \
                         (delta_pyft_f > filter_thresholds['pyft_f_threshold'] and filter_thresholds['pyft_f_threshold'] != 0) or \
                         (delta_pyft_t > filter_thresholds['pyft_t_threshold'] and filter_thresholds['pyft_t_threshold'] != 0):
@@ -130,8 +120,6 @@ def main(args):
                     ridx += 1
                 l515_pc_xyzs_l515_o = l515_pc_xyzs_l515_o[selected_idxs]
                 l515_pc_rgbs_o = l515_pc_rgbs_o[selected_idxs]
-                gripper_xyzs_l515_o = gripper_xyzs_l515_o[selected_idxs]
-                gripper_quats_l515_o = gripper_quats_l515_o[selected_idxs]
                 pyft_xyzs_l515_o = pyft_xyzs_l515_o[selected_idxs]
                 pyft_quats_l515_o = pyft_quats_l515_o[selected_idxs]
                 pyft_fs_o = pyft_fs_o[selected_idxs]
@@ -146,8 +134,6 @@ def main(args):
             save_hdf5_demo_group = save_hdf5_data_group.create_group(demo_name)
             save_hdf5_demo_group.create_dataset('l515_pc_xyzs_l515', data=l515_pc_xyzs_l515_o, dtype=np.float32)
             save_hdf5_demo_group.create_dataset('l515_pc_rgbs', data=l515_pc_rgbs_o, dtype=np.float32)
-            save_hdf5_demo_group.create_dataset('gripper_xyzs_l515', data=gripper_xyzs_l515_o, dtype=np.float32)
-            save_hdf5_demo_group.create_dataset('gripper_quats_l515', data=gripper_quats_l515_o, dtype=np.float32)
             save_hdf5_demo_group.create_dataset('pyft_xyzs_l515', data=pyft_xyzs_l515_o, dtype=np.float32)
             save_hdf5_demo_group.create_dataset('pyft_quats_l515', data=pyft_quats_l515_o, dtype=np.float32)
             save_hdf5_demo_group.create_dataset('pyft_fs', data=pyft_fs_o, dtype=np.float32)

@@ -95,8 +95,8 @@ def main(args):
         _, _, t265_xyz, t265_quat = t265.get()
         t265_pose = T265.raw2pose(t265_xyz, t265_quat)                      # c2w
         t265_pose = np.linalg.inv(t265_initial_pose) @ t265_pose            # c2c0 = w2c0 @ c2w
-        t265_pose = T265r_2_BASE @ t265_pose                                # c2b = c02b @ c2c0
-        pyft_pose = t265_pose @ np.linalg.inv(T265r_2_PYFT)                 # f2b = c2b @ f2c
+        t265_pose = T265_2_BASE @ t265_pose                                 # c2b = c02b @ c2c0
+        pyft_pose = t265_pose @ np.linalg.inv(T265_2_PYFT)                  # f2b = c2b @ f2c
         pyft_ft = Pyft.raw2tare(raw_ft=pyft_ft, tare=tare_data, pose=pyft_pose[:3, :3])
         print(np.linalg.norm(pyft_ft[:3]), np.linalg.norm(pyft_ft[3:]))
         print(pyft_ft[:3], pyft_ft[3:])

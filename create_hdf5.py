@@ -28,10 +28,8 @@ def config_parse() -> configargparse.Namespace:
     parser.add_argument('--data_path', type=str)
     parser.add_argument('--save_path', type=str)
     parser.add_argument('--clip_object', action='store_true')
-    parser.add_argument('--clip_gripper', action='store_true')
     parser.add_argument('--clip_pyft', action='store_true')
     parser.add_argument('--clip_base', action='store_true')
-    parser.add_argument('--render_gripper_num', type=int)
     parser.add_argument('--render_pyft_num', type=int)
     parser.add_argument('--voxel_size', type=float)
     parser.add_argument('--pc_num', type=int)
@@ -45,10 +43,8 @@ def main(args):
     data_path = args.data_path
     save_path = args.save_path
     clip_object = args.clip_object
-    clip_gripper = args.clip_gripper
     clip_pyft = args.clip_pyft
     clip_base = args.clip_base
-    render_gripper_num = args.render_gripper_num
     render_pyft_num = args.render_pyft_num
     voxel_size = args.voxel_size
     pc_num = args.pc_num
@@ -64,18 +60,12 @@ def main(args):
     l515_intrinsics = np.loadtxt(os.path.join(l515_path, 'intrinsics.txt'))     # (4,), float64
     l515_depth_scale = np.loadtxt(os.path.join(l515_path, 'depth_scale.txt')).item()
     l515_timestamps = np.load(os.path.join(l515_path, 'timestamps.npy'))
-    # load t265r data
-    t265r_path = os.path.join(data_path, 't265r')
-    t265r_pose_path = os.path.join(t265r_path, 'pose')
-    t265r_pose_timestamps = np.load(os.path.join(t265r_pose_path, 'timestamps.npy'))
-    t265r_xyzs = np.load(os.path.join(t265r_pose_path, 'xyz.npy'))
-    t265r_quats = np.load(os.path.join(t265r_pose_path, 'quat.npy'))
-    # load t265l data
-    t265l_path = os.path.join(data_path, 't265l')
-    t265l_pose_path = os.path.join(t265l_path, 'pose')
-    t265l_pose_timestamps = np.load(os.path.join(t265l_pose_path, 'timestamps.npy'))
-    t265l_xyzs = np.load(os.path.join(t265l_pose_path, 'xyz.npy'))
-    t265l_quats = np.load(os.path.join(t265l_pose_path, 'quat.npy'))
+    # load t265 data
+    t265_path = os.path.join(data_path, 't265')
+    t265_pose_path = os.path.join(t265_path, 'pose')
+    t265_pose_timestamps = np.load(os.path.join(t265_pose_path, 'timestamps.npy'))
+    t265_xyzs = np.load(os.path.join(t265_pose_path, 'xyz.npy'))
+    t265_quats = np.load(os.path.join(t265_pose_path, 'quat.npy'))
     # load pyft data
     pyft_path = os.path.join(data_path, 'pyft')
     with open(os.path.join(pyft_path, 'tare_pyft.json'), 'r') as f:
@@ -92,14 +82,10 @@ def main(args):
         stages = json.load(f)
 
     # deal with t265 special prepare
-    t265r_initial_pose_mask = np.logical_and(t265r_pose_timestamps > t265_pose_start_timestamp_ms, t265r_pose_timestamps < t265_pose_end_timestamp_ms)
-    t265r_initial_xyz = np.median(t265r_xyzs[t265r_initial_pose_mask, :], axis=0)
-    t265r_initial_quat = np.median(t265r_quats[t265r_initial_pose_mask, :], axis=0)
-    t265r_initial_pose = T265.raw2pose(t265r_initial_xyz, t265r_initial_quat)       # c02w
-    t265l_initial_pose_mask = np.logical_and(t265l_pose_timestamps > t265_pose_start_timestamp_ms, t265l_pose_timestamps < t265_pose_end_timestamp_ms)
-    t265l_initial_xyz = np.median(t265l_xyzs[t265l_initial_pose_mask, :], axis=0)
-    t265l_initial_quat = np.median(t265l_quats[t265l_initial_pose_mask, :], axis=0)
-    t265l_initial_pose = T265.raw2pose(t265l_initial_xyz, t265l_initial_quat)       # c02w
+    t265_initial_pose_mask = np.logical_and(t265_pose_timestamps > t265_pose_start_timestamp_ms, t265_pose_timestamps < t265_pose_end_timestamp_ms)
+    t265_initial_xyz = np.median(t265_xyzs[t265_initial_pose_mask, :], axis=0)
+    t265_initial_quat = np.median(t265_quats[t265_initial_pose_mask, :], axis=0)
+    t265_initial_pose = T265.raw2pose(t265_initial_xyz, t265_initial_quat)          # c02w
 
     # deal with angler special prepare
     angler_angles = Angler.raw2angle(angler_angles)
@@ -113,12 +99,9 @@ def main(args):
     for l515_current_idx in tqdm.trange(len(l515_timestamps)):
         # process l515 variables
         l515_current_timestamp = l515_timestamps[l515_current_idx]
-        # process t265r variables
-        t265r_pose_current_idx = np.searchsorted(t265r_pose_timestamps, l515_current_timestamp)
-        t265r_pose_current_idx = min(t265r_pose_current_idx, len(t265r_pose_timestamps)-1)
-        # process t265l variables
-        t265l_pose_current_idx = np.searchsorted(t265l_pose_timestamps, l515_current_timestamp)
-        t265l_pose_current_idx = min(t265l_pose_current_idx, len(t265l_pose_timestamps)-1)
+        # process t265 variables
+        t265_pose_current_idx = np.searchsorted(t265_pose_timestamps, l515_current_timestamp)
+        t265_pose_current_idx = min(t265_pose_current_idx, len(t265_pose_timestamps)-1)
         # process pyft variables
         pyft_current_idx = np.searchsorted(pyft_timestamps, l515_current_timestamp)
         pyft_current_idx = min(pyft_current_idx, len(pyft_timestamps)-1)
@@ -129,8 +112,7 @@ def main(args):
         # process stage
         stage_idx = search_stage(l515_current_timestamp, stages)
         stage = stages[stage_idx]
-        t265r_xyz_t265rw_bias = np.array(stage['t265r_xyz_t265rw_bias'])
-        t265l_xyz_t265lw_bias = np.array(stage['t265l_xyz_t265lw_bias'])
+        t265_xyz_t265w_bias = np.array(stage['t265_xyz_t265w_bias'])
         if stage['stage'] == 'unrelated':
             continue
         if stage_idx not in stage_idx_map:
@@ -141,8 +123,6 @@ def main(args):
                 'l515_pc_rgbs': [], 
                 'l515_pc_xyzs_l515_mesh': [], 
                 'l515_pc_rgbs_mesh': [], 
-                'gripper_xyzs_l515': [], 
-                'gripper_quats_l515': [], 
                 'pyft_xyzs_l515': [], 
                 'pyft_quats_l515': [], 
                 'pyft_fs_pyft': [], 
@@ -152,29 +132,19 @@ def main(args):
                 'angler_widths': [], 
             }
 
-        # process t265r elements
-        t265r_xyz_t265rw, t265r_quat_t265rw = t265r_xyzs[t265r_pose_current_idx], t265r_quats[t265r_pose_current_idx]
-        t265r_xyz_t265rw = t265r_xyz_t265rw + t265r_xyz_t265rw_bias
-        t265r_pose_t265rw = T265.raw2pose(t265r_xyz_t265rw, t265r_quat_t265rw)              # c2w
-        t265r_pose_t265r0 = np.linalg.inv(t265r_initial_pose) @ t265r_pose_t265rw           # c2c0 = w2c0 @ c2w
-        t265r_pose_l515 = np.linalg.inv(L515_2_T265r) @ t265r_pose_t265r0                   # c2l = c02l @ c2c0
-        # process t265l elements
-        t265l_xyz_t265lw, t265l_quat_t265lw = t265l_xyzs[t265l_pose_current_idx], t265l_quats[t265l_pose_current_idx]
-        t265l_xyz_t265lw = t265l_xyz_t265lw + t265l_xyz_t265lw_bias
-        t265l_pose_t265lw = T265.raw2pose(t265l_xyz_t265lw, t265l_quat_t265lw)              # c2w
-        t265l_pose_t265l0 = np.linalg.inv(t265l_initial_pose) @ t265l_pose_t265lw           # c2c0 = w2c0 @ c2w
-        t265l_pose_l515 = np.linalg.inv(L515_2_T265l) @ t265l_pose_t265l0                   # c2l = c02l @ c2c0
-        gripper_pose_l515 = t265l_pose_l515 @ np.linalg.inv(T265l_2_GRIPPER)                # g2l = c2l @ g2c
-        gripper_xyz_l515, gripper_quat_l515 = gripper_pose_l515[:3, 3], Rot.from_matrix(gripper_pose_l515[:3, :3]).as_quat()
-        data_dict[stage_idx_map[stage_idx]]['gripper_xyzs_l515'].append(gripper_xyz_l515)
-        data_dict[stage_idx_map[stage_idx]]['gripper_quats_l515'].append(gripper_quat_l515)
+        # process t265 elements
+        t265_xyz_t265w, t265_quat_t265w = t265_xyzs[t265_pose_current_idx], t265_quats[t265_pose_current_idx]
+        t265_xyz_t265w = t265_xyz_t265w + t265_xyz_t265w_bias
+        t265_pose_t265w = T265.raw2pose(t265_xyz_t265w, t265_quat_t265w)                # c2w
+        t265_pose_t2650 = np.linalg.inv(t265_initial_pose) @ t265_pose_t265w            # c2c0 = w2c0 @ c2w
+        t265_pose_l515 = np.linalg.inv(L515_2_T265) @ t265_pose_t2650                   # c2l = c02l @ c2c0
         # process pyft elements
-        pyft_pose_l515 = t265r_pose_l515 @ np.linalg.inv(T265r_2_PYFT)                      # f2l = c2l @ f2c
+        pyft_pose_l515 = t265_pose_l515 @ np.linalg.inv(T265_2_PYFT)                    # f2l = c2l @ f2c
         pyft_xyz_l515, pyft_quat_l515 = pyft_pose_l515[:3, 3], Rot.from_matrix(pyft_pose_l515[:3, :3]).as_quat()
         data_dict[stage_idx_map[stage_idx]]['pyft_xyzs_l515'].append(pyft_xyz_l515)
         data_dict[stage_idx_map[stage_idx]]['pyft_quats_l515'].append(pyft_quat_l515)
         pyft_ft_pyft = pyft_fts[pyft_current_idx]
-        pyft_pose_base = L515_2_BASE @ pyft_pose_l515                                       # f2b = l2b @ f2l
+        pyft_pose_base = L515_2_BASE @ pyft_pose_l515                                   # f2b = l2b @ f2l
         pyft_ft_pyft = Pyft.raw2tare(pyft_ft_pyft, pyft_tare, pyft_pose_base[:3, :3])
         pyft_f_pyft, pyft_t_pyft = pyft_ft_pyft[:3], pyft_ft_pyft[3:]
         pyft_f_l515 = pyft_pose_l515[:3, :3] @ pyft_f_pyft
@@ -200,13 +170,6 @@ def main(args):
                                 (l515_pc_xyz_base[:, 2] > OBJECT_SPACE[2][0]) & (l515_pc_xyz_base[:, 2] < OBJECT_SPACE[2][1])
         else:
             clip_object_mask = np.zeros((l515_pc_xyz_l515.shape[0],), dtype=bool)
-        if clip_gripper:
-            l515_pc_xyz_gripper = transform_pc(l515_pc_xyz_l515, np.linalg.inv(gripper_pose_l515))
-            clip_gripper_mask = (l515_pc_xyz_gripper[:, 0] > GRIPPER_SPACE[0][0]) & (l515_pc_xyz_gripper[:, 0] < GRIPPER_SPACE[0][1]) & \
-                                (l515_pc_xyz_gripper[:, 1] > GRIPPER_SPACE[1][0]) & (l515_pc_xyz_gripper[:, 1] < GRIPPER_SPACE[1][1]) & \
-                                (l515_pc_xyz_gripper[:, 2] > GRIPPER_SPACE[2][0]) & (l515_pc_xyz_gripper[:, 2] < GRIPPER_SPACE[2][1])
-        else:
-            clip_gripper_mask = np.zeros((l515_pc_xyz_l515.shape[0],), dtype=bool)
         if clip_pyft:
             l515_pc_xyz_pyft = transform_pc(l515_pc_xyz_l515, np.linalg.inv(pyft_pose_l515))
             clip_pyft_mask = (l515_pc_xyz_pyft[:, 0] > PYFT_SPACE[0][0]) & (l515_pc_xyz_pyft[:, 0] < PYFT_SPACE[0][1]) & \
@@ -221,10 +184,8 @@ def main(args):
                                 (l515_pc_xyz_base[:, 2] > BASE_SPACE[2][0]) & (l515_pc_xyz_base[:, 2] < BASE_SPACE[2][1])
         else:
             clip_base_mask = np.ones((l515_pc_xyz_l515.shape[0],), dtype=bool)
-        valid_mask = np.logical_and(clip_base_mask, np.logical_or(clip_object_mask, np.logical_or(clip_gripper_mask, clip_pyft_mask)))
+        valid_mask = np.logical_and(clip_base_mask, np.logical_or(clip_object_mask, clip_pyft_mask))
         # TODO: hardcode to throw out hands
-        l515_pc_xyz_gripper = transform_pc(l515_pc_xyz_l515, np.linalg.inv(gripper_pose_l515))
-        valid_mask = np.logical_and(valid_mask, l515_pc_xyz_gripper[:, 2] > 0.)
         l515_pc_xyz_pyft = transform_pc(l515_pc_xyz_l515, np.linalg.inv(pyft_pose_l515))
         valid_mask = np.logical_and(valid_mask, l515_pc_xyz_pyft[:, 2] > 0.)
         valid_mask = np.where(valid_mask)[0]
@@ -232,26 +193,20 @@ def main(args):
         l515_pc_rgb = l515_pc_rgb[valid_mask]
         l515_pc_xyz_l515_mesh = l515_pc_xyz_l515.copy()
         l515_pc_rgb_mesh = l515_pc_rgb.copy()
-        if render_gripper_num != 0:
-            rfinger_pc_xyz_rfinger_mesh = mesh2pc(os.path.join("objs", "right_finger.obj"), num_points=render_gripper_num//2)
-            lfinger_pc_xyz_lfinger_mesh = mesh2pc(os.path.join("objs", "left_finger.obj"), num_points=render_gripper_num//2)
-            angler_finger_pose_gripper = np.identity(4)
-            angler_finger_pose_gripper[0, 3] = angler_width / 2.
-            gripper_right_finger_pose_l515 = gripper_pose_l515 @ angler_finger_pose_gripper
-            rfinger_pc_xyz_l515_mesh = transform_pc(rfinger_pc_xyz_rfinger_mesh, gripper_right_finger_pose_l515)
-            angler_finger_pose_gripper[0, 3] = -angler_width / 2.
-            gripper_left_finger_pose_l515 = gripper_pose_l515 @ angler_finger_pose_gripper
-            lfinger_pc_xyz_l515_mesh = transform_pc(lfinger_pc_xyz_lfinger_mesh, gripper_left_finger_pose_l515)
+        if render_pyft_num != 0:
+            rfinger_pc_xyz_rfinger_mesh = mesh2pc(os.path.join("objs", "right_finger.obj"), num_points=render_pyft_num//2)
+            lfinger_pc_xyz_lfinger_mesh = mesh2pc(os.path.join("objs", "left_finger.obj"), num_points=render_pyft_num//2)
+            angler_finger_pose_pyft = np.identity(4)
+            angler_finger_pose_pyft[0, 3] = angler_width / 2.
+            pyft_right_finger_pose_l515 = pyft_pose_l515 @ angler_finger_pose_pyft
+            rfinger_pc_xyz_l515_mesh = transform_pc(rfinger_pc_xyz_rfinger_mesh, pyft_right_finger_pose_l515)
+            angler_finger_pose_pyft[0, 3] = -angler_width / 2.
+            pyft_left_finger_pose_l515 = pyft_pose_l515 @ angler_finger_pose_pyft
+            lfinger_pc_xyz_l515_mesh = transform_pc(lfinger_pc_xyz_lfinger_mesh, pyft_left_finger_pose_l515)
             rfinger_pc_rgb_mesh = np.ones_like(rfinger_pc_xyz_l515_mesh)
             lfinger_pc_rgb_mesh = np.ones_like(lfinger_pc_xyz_l515_mesh)
             l515_pc_xyz_l515_mesh = np.concatenate([l515_pc_xyz_l515_mesh, rfinger_pc_xyz_l515_mesh, lfinger_pc_xyz_l515_mesh], axis=0)
             l515_pc_rgb_mesh = np.concatenate([l515_pc_rgb_mesh, rfinger_pc_rgb_mesh, lfinger_pc_rgb_mesh], axis=0)
-        if render_pyft_num != 0:
-            pyft_pc_xyz_pyft_mesh = mesh2pc(os.path.join("objs", "only_peeler.obj"), num_points=render_pyft_num)
-            pyft_pc_xyz_l515_mesh = transform_pc(pyft_pc_xyz_pyft_mesh, pyft_pose_l515)
-            pyft_pc_rgb_mesh = np.ones_like(pyft_pc_xyz_l515_mesh)
-            l515_pc_xyz_l515_mesh = np.concatenate([l515_pc_xyz_l515_mesh, pyft_pc_xyz_l515_mesh], axis=0)
-            l515_pc_rgb_mesh = np.concatenate([l515_pc_rgb_mesh, pyft_pc_rgb_mesh], axis=0)
         if voxel_size != 0:
             l515_pc_xyz_l515, l515_pc_rgb = voxelize(l515_pc_xyz_l515, l515_pc_rgb, voxel_size)
             l515_pc_xyz_l515_mesh, l515_pc_rgb_mesh = voxelize(l515_pc_xyz_l515_mesh, l515_pc_rgb_mesh, voxel_size)
@@ -287,8 +242,6 @@ def main(args):
             stage_hdf5_o_group.create_dataset('l515_pc_rgbs', data=np.array(data_dict[stage_name]['l515_pc_rgbs']))
             stage_hdf5_o_group.create_dataset('l515_pc_xyzs_l515_mesh', data=np.array(data_dict[stage_name]['l515_pc_xyzs_l515_mesh']))
             stage_hdf5_o_group.create_dataset('l515_pc_rgbs_mesh', data=np.array(data_dict[stage_name]['l515_pc_rgbs_mesh']))
-            stage_hdf5_o_group.create_dataset('gripper_xyzs_l515', data=np.array(data_dict[stage_name]['gripper_xyzs_l515']))
-            stage_hdf5_o_group.create_dataset('gripper_quats_l515', data=np.array(data_dict[stage_name]['gripper_quats_l515']))
             stage_hdf5_o_group.create_dataset('pyft_xyzs_l515', data=np.array(data_dict[stage_name]['pyft_xyzs_l515']))
             stage_hdf5_o_group.create_dataset('pyft_quats_l515', data=np.array(data_dict[stage_name]['pyft_quats_l515']))
             stage_hdf5_o_group.create_dataset('pyft_fs_pyft', data=np.array(data_dict[stage_name]['pyft_fs_pyft']))
@@ -299,10 +252,8 @@ def main(args):
             # save attributes
             stage_hdf5_data_group.attrs['num_samples'] = len(data_dict[stage_name]['l515_pc_xyzs_l515'])
             stage_hdf5_o_group.attrs['clip_object'] = clip_object
-            stage_hdf5_o_group.attrs['clip_gripper'] = clip_gripper
             stage_hdf5_o_group.attrs['clip_pyft'] = clip_pyft
             stage_hdf5_o_group.attrs['clip_base'] = clip_base
-            stage_hdf5_o_group.attrs['render_gripper_num'] = render_gripper_num
             stage_hdf5_o_group.attrs['render_pyft_num'] = render_pyft_num
             stage_hdf5_o_group.attrs['voxel_size'] = voxel_size
             stage_hdf5_o_group.attrs['pc_num'] = pc_num

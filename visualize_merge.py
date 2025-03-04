@@ -46,8 +46,6 @@ def main(args):
 
             l515_pc_xyzs_l515 = demo_group['l515_pc_xyzs_l515'][:].astype(np.float32)
             l515_pc_rgbs = demo_group['l515_pc_rgbs'][:].astype(np.float32)
-            gripper_xyzs_l515 = demo_group['gripper_xyzs_l515'][:].astype(np.float32)
-            gripper_quats_l515 = demo_group['gripper_quats_l515'][:].astype(np.float32)
             pyft_xyzs_l515 = demo_group['pyft_xyzs_l515'][:].astype(np.float32)
             pyft_quats_l515 = demo_group['pyft_quats_l515'][:].astype(np.float32)
             pyft_fs = demo_group['pyft_fs'][:].astype(np.float32)
@@ -80,15 +78,6 @@ def main(args):
                         l515_pcd.points = o3d.utility.Vector3dVector(l515_pc_xyz_l515)
                         l515_pcd.colors = o3d.utility.Vector3dVector(l515_pc_rgb)
                         visualizer.add_geometry(l515_pcd)
-                        # add gripper elements
-                        gripper_xyz_l515, gripper_quat_l515 = gripper_xyzs_l515[current_idx], gripper_quats_l515[current_idx]
-                        gripper_pose_l515 = xyzquat2mat(gripper_xyz_l515, gripper_quat_l515)
-                        gripper_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.05, origin=np.array([0., 0., 0.]))
-                        gripper_frame.transform(gripper_pose_l515)
-                        visualizer.add_geometry(gripper_frame)
-                        gripper = o3d.io.read_triangle_mesh(os.path.join("objs", "gripper.obj"))
-                        gripper.transform(gripper_pose_l515)
-                        visualizer.add_geometry(gripper)
                         # add pyft elements
                         pyft_xyz_l515, pyft_quat_l515 = pyft_xyzs_l515[current_idx], pyft_quats_l515[current_idx]
                         pyft_pose_l515 = xyzquat2mat(pyft_xyz_l515, pyft_quat_l515)
@@ -121,21 +110,21 @@ def main(args):
                         pyft_t_arrow.rotate(pyft_t_rotation_l515, np.array([[0], [0], [0]]))
                         pyft_t_arrow.translate(pyft_t_translation_l515)
                         visualizer.add_geometry(pyft_t_arrow)
-                        pyft_peeler = o3d.io.read_triangle_mesh(os.path.join("objs", "peeler.obj"))
-                        pyft_peeler.transform(pyft_pose_l515)
-                        visualizer.add_geometry(pyft_peeler)
+                        pyft_gripper = o3d.io.read_triangle_mesh(os.path.join("objs", "gripper.obj"))
+                        pyft_gripper.transform(pyft_pose_l515)
+                        visualizer.add_geometry(pyft_gripper)
                         # add angler elements
                         angler_width = angler_widths[current_idx]
                         angler_right_finger = o3d.io.read_triangle_mesh(os.path.join("objs", "right_finger.obj"))
                         angler_left_finger = o3d.io.read_triangle_mesh(os.path.join("objs", "left_finger.obj"))
-                        angler_finger_pose_gripper = np.identity(4)
-                        angler_finger_pose_gripper[0, 3] = angler_width / 2.
-                        gripper_right_finger_pose_l515 = gripper_pose_l515 @ angler_finger_pose_gripper
-                        angler_right_finger.transform(gripper_right_finger_pose_l515)
+                        angler_finger_pose_pyft = np.identity(4)
+                        angler_finger_pose_pyft[0, 3] = angler_width / 2.
+                        pyft_right_finger_pose_l515 = pyft_pose_l515 @ angler_finger_pose_pyft
+                        angler_right_finger.transform(pyft_right_finger_pose_l515)
                         visualizer.add_geometry(angler_right_finger)
-                        angler_finger_pose_gripper[0, 3] = -angler_width / 2.
-                        gripper_left_finger_pose_l515 = gripper_pose_l515 @ angler_finger_pose_gripper
-                        angler_left_finger.transform(gripper_left_finger_pose_l515)
+                        angler_finger_pose_pyft[0, 3] = -angler_width / 2.
+                        pyft_left_finger_pose_l515 = pyft_pose_l515 @ angler_finger_pose_pyft
+                        angler_left_finger.transform(pyft_left_finger_pose_l515)
                         visualizer.add_geometry(angler_left_finger)
 
                     # visualizer setup
@@ -150,17 +139,6 @@ def main(args):
 
                     # visualize loop
                     for current_idx in a_idx:
-                        # update gripper elements
-                        gripper_xyz_l515, gripper_quat_l515 = gripper_xyzs_l515[current_idx], gripper_quats_l515[current_idx]
-                        gripper_pose_l515_last = gripper_pose_l515.copy()
-                        gripper_pose_l515 = xyzquat2mat(gripper_xyz_l515, gripper_quat_l515)
-                        gripper_frame.transform(np.linalg.inv(gripper_pose_l515_last))
-                        gripper_frame.transform(gripper_pose_l515)
-                        visualizer.update_geometry(gripper_frame)
-                        gripper.transform(np.linalg.inv(gripper_pose_l515_last))
-                        gripper.transform(gripper_pose_l515)
-                        gripper_delta_pose = np.dot(np.linalg.inv(gripper_pose_l515_last), gripper_pose_l515)
-                        visualizer.update_geometry(gripper)
                         # update pyft elements
                         pyft_xyz_l515, pyft_quat_l515 = pyft_xyzs_l515[current_idx], pyft_quats_l515[current_idx]
                         pyft_pose_l515_last = pyft_pose_l515.copy()
@@ -205,24 +183,24 @@ def main(args):
                         pyft_t_arrow.rotate(pyft_t_rotation_l515, np.array([[0], [0], [0]]))
                         pyft_t_arrow.translate(pyft_t_translation_l515)
                         visualizer.update_geometry(pyft_t_arrow)
-                        pyft_peeler.transform(np.linalg.inv(pyft_pose_l515_last))
-                        pyft_peeler.transform(pyft_pose_l515)
-                        visualizer.update_geometry(pyft_peeler)
+                        pyft_gripper.transform(np.linalg.inv(pyft_pose_l515_last))
+                        pyft_gripper.transform(pyft_pose_l515)
+                        visualizer.update_geometry(pyft_gripper)
                         # update angler elements
                         angler_width_last = angler_width.copy()
                         angler_width = angler_widths[current_idx]
-                        angler_finger_pose_gripper = np.identity(4)
-                        angler_finger_pose_gripper[0, 3] = angler_width / 2.
-                        gripper_right_finger_pose_l515_last = gripper_right_finger_pose_l515.copy()
-                        gripper_right_finger_pose_l515 = gripper_pose_l515 @ angler_finger_pose_gripper
-                        angler_right_finger.transform(np.linalg.inv(gripper_right_finger_pose_l515_last))
-                        angler_right_finger.transform(gripper_right_finger_pose_l515)
+                        angler_finger_pose_pyft = np.identity(4)
+                        angler_finger_pose_pyft[0, 3] = angler_width / 2.
+                        pyft_right_finger_pose_l515_last = pyft_right_finger_pose_l515.copy()
+                        pyft_right_finger_pose_l515 = pyft_pose_l515 @ angler_finger_pose_pyft
+                        angler_right_finger.transform(np.linalg.inv(pyft_right_finger_pose_l515_last))
+                        angler_right_finger.transform(pyft_right_finger_pose_l515)
                         visualizer.update_geometry(angler_right_finger)
-                        angler_finger_pose_gripper[0, 3] = -angler_width / 2.
-                        gripper_left_finger_pose_l515_last = gripper_left_finger_pose_l515.copy()
-                        gripper_left_finger_pose_l515 = gripper_pose_l515 @ angler_finger_pose_gripper
-                        angler_left_finger.transform(np.linalg.inv(gripper_left_finger_pose_l515_last))
-                        angler_left_finger.transform(gripper_left_finger_pose_l515)
+                        angler_finger_pose_pyft[0, 3] = -angler_width / 2.
+                        pyft_left_finger_pose_l515_last = pyft_left_finger_pose_l515.copy()
+                        pyft_left_finger_pose_l515 = pyft_pose_l515 @ angler_finger_pose_pyft
+                        angler_left_finger.transform(np.linalg.inv(pyft_left_finger_pose_l515_last))
+                        angler_left_finger.transform(pyft_left_finger_pose_l515)
                         visualizer.update_geometry(angler_left_finger)
 
                         # visualizer update
@@ -289,15 +267,6 @@ def main(args):
                 l515_pcd.points = o3d.utility.Vector3dVector(l515_pc_xyz_l515)
                 l515_pcd.colors = o3d.utility.Vector3dVector(l515_pc_rgb)
                 visualizer.add_geometry(l515_pcd)
-                # add gripper elements
-                gripper_xyz_l515, gripper_quat_l515 = gripper_xyzs_l515[current_idx], gripper_quats_l515[current_idx]
-                gripper_pose_l515 = xyzquat2mat(gripper_xyz_l515, gripper_quat_l515)
-                gripper_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.05, origin=np.array([0., 0., 0.]))
-                gripper_frame.transform(gripper_pose_l515)
-                visualizer.add_geometry(gripper_frame)
-                gripper = o3d.io.read_triangle_mesh(os.path.join("objs", "gripper.obj"))
-                gripper.transform(gripper_pose_l515)
-                visualizer.add_geometry(gripper)
                 # add pyft elements
                 pyft_xyz_l515, pyft_quat_l515 = pyft_xyzs_l515[current_idx], pyft_quats_l515[current_idx]
                 pyft_pose_l515 = xyzquat2mat(pyft_xyz_l515, pyft_quat_l515)
@@ -330,21 +299,21 @@ def main(args):
                 pyft_t_arrow.rotate(pyft_t_rotation_l515, np.array([[0], [0], [0]]))
                 pyft_t_arrow.translate(pyft_t_translation_l515)
                 visualizer.add_geometry(pyft_t_arrow)
-                pyft_peeler = o3d.io.read_triangle_mesh(os.path.join("objs", "peeler.obj"))
-                pyft_peeler.transform(pyft_pose_l515)
-                visualizer.add_geometry(pyft_peeler)
+                pyft_gripper = o3d.io.read_triangle_mesh(os.path.join("objs", "gripper.obj"))
+                pyft_gripper.transform(pyft_pose_l515)
+                visualizer.add_geometry(pyft_gripper)
                 # add angler elements
                 angler_width = angler_widths[current_idx]
                 angler_right_finger = o3d.io.read_triangle_mesh(os.path.join("objs", "right_finger.obj"))
                 angler_left_finger = o3d.io.read_triangle_mesh(os.path.join("objs", "left_finger.obj"))
-                angler_finger_pose_gripper = np.identity(4)
-                angler_finger_pose_gripper[0, 3] = angler_width / 2.
-                gripper_right_finger_pose_l515 = gripper_pose_l515 @ angler_finger_pose_gripper
-                angler_right_finger.transform(gripper_right_finger_pose_l515)
+                angler_finger_pose_pyft = np.identity(4)
+                angler_finger_pose_pyft[0, 3] = angler_width / 2.
+                pyft_right_finger_pose_l515 = pyft_pose_l515 @ angler_finger_pose_pyft
+                angler_right_finger.transform(pyft_right_finger_pose_l515)
                 visualizer.add_geometry(angler_right_finger)
-                angler_finger_pose_gripper[0, 3] = -angler_width / 2.
-                gripper_left_finger_pose_l515 = gripper_pose_l515 @ angler_finger_pose_gripper
-                angler_left_finger.transform(gripper_left_finger_pose_l515)
+                angler_finger_pose_pyft[0, 3] = -angler_width / 2.
+                pyft_left_finger_pose_l515 = pyft_pose_l515 @ angler_finger_pose_pyft
+                angler_left_finger.transform(pyft_left_finger_pose_l515)
                 visualizer.add_geometry(angler_left_finger)
 
                 # visualizer setup
@@ -358,7 +327,7 @@ def main(args):
                 view_control.convert_from_pinhole_camera_parameters(params, allow_arbitrary=True)
 
                 # visualize loop
-                gripper_xyz_deltas, gripper_quat_deltas, pyft_xyz_deltas, pyft_quat_deltas, pyft_f_deltas, pyft_t_deltas, angler_width_deltas = [], [], [], [], [], [], []
+                pyft_xyz_deltas, pyft_quat_deltas, pyft_f_deltas, pyft_t_deltas, angler_width_deltas = [], [], [], [], []
                 with tqdm.tqdm(total=len_seq) as pbar:
                     while current_idx < len_seq:
                         # update l515 elements
@@ -366,17 +335,6 @@ def main(args):
                         l515_pcd.points = o3d.utility.Vector3dVector(l515_pc_xyz_l515)
                         l515_pcd.colors = o3d.utility.Vector3dVector(l515_pc_rgb)
                         visualizer.update_geometry(l515_pcd)
-                        # update gripper elements
-                        gripper_xyz_l515, gripper_quat_l515 = gripper_xyzs_l515[current_idx], gripper_quats_l515[current_idx]
-                        gripper_pose_l515_last = gripper_pose_l515.copy()
-                        gripper_pose_l515 = xyzquat2mat(gripper_xyz_l515, gripper_quat_l515)
-                        gripper_frame.transform(np.linalg.inv(gripper_pose_l515_last))
-                        gripper_frame.transform(gripper_pose_l515)
-                        visualizer.update_geometry(gripper_frame)
-                        gripper.transform(np.linalg.inv(gripper_pose_l515_last))
-                        gripper.transform(gripper_pose_l515)
-                        gripper_delta_pose = np.dot(np.linalg.inv(gripper_pose_l515_last), gripper_pose_l515)
-                        visualizer.update_geometry(gripper)
                         # update pyft elements
                         pyft_xyz_l515, pyft_quat_l515 = pyft_xyzs_l515[current_idx], pyft_quats_l515[current_idx]
                         pyft_pose_l515_last = pyft_pose_l515.copy()
@@ -421,24 +379,24 @@ def main(args):
                         pyft_t_arrow.rotate(pyft_t_rotation_l515, np.array([[0], [0], [0]]))
                         pyft_t_arrow.translate(pyft_t_translation_l515)
                         visualizer.update_geometry(pyft_t_arrow)
-                        pyft_peeler.transform(np.linalg.inv(pyft_pose_l515_last))
-                        pyft_peeler.transform(pyft_pose_l515)
-                        visualizer.update_geometry(pyft_peeler)
+                        pyft_gripper.transform(np.linalg.inv(pyft_pose_l515_last))
+                        pyft_gripper.transform(pyft_pose_l515)
+                        visualizer.update_geometry(pyft_gripper)
                         # update angler elements
                         angler_width_last = angler_width.copy()
                         angler_width = angler_widths[current_idx]
-                        angler_finger_pose_gripper = np.identity(4)
-                        angler_finger_pose_gripper[0, 3] = angler_width / 2.
-                        gripper_right_finger_pose_l515_last = gripper_right_finger_pose_l515.copy()
-                        gripper_right_finger_pose_l515 = gripper_pose_l515 @ angler_finger_pose_gripper
-                        angler_right_finger.transform(np.linalg.inv(gripper_right_finger_pose_l515_last))
-                        angler_right_finger.transform(gripper_right_finger_pose_l515)
+                        angler_finger_pose_pyft = np.identity(4)
+                        angler_finger_pose_pyft[0, 3] = angler_width / 2.
+                        pyft_right_finger_pose_l515_last = pyft_right_finger_pose_l515.copy()
+                        pyft_right_finger_pose_l515 = pyft_pose_l515 @ angler_finger_pose_pyft
+                        angler_right_finger.transform(np.linalg.inv(pyft_right_finger_pose_l515_last))
+                        angler_right_finger.transform(pyft_right_finger_pose_l515)
                         visualizer.update_geometry(angler_right_finger)
-                        angler_finger_pose_gripper[0, 3] = -angler_width / 2.
-                        gripper_left_finger_pose_l515_last = gripper_left_finger_pose_l515.copy()
-                        gripper_left_finger_pose_l515 = gripper_pose_l515 @ angler_finger_pose_gripper
-                        angler_left_finger.transform(np.linalg.inv(gripper_left_finger_pose_l515_last))
-                        angler_left_finger.transform(gripper_left_finger_pose_l515)
+                        angler_finger_pose_pyft[0, 3] = -angler_width / 2.
+                        pyft_left_finger_pose_l515_last = pyft_left_finger_pose_l515.copy()
+                        pyft_left_finger_pose_l515 = pyft_pose_l515 @ angler_finger_pose_pyft
+                        angler_left_finger.transform(np.linalg.inv(pyft_left_finger_pose_l515_last))
+                        angler_left_finger.transform(pyft_left_finger_pose_l515)
                         visualizer.update_geometry(angler_left_finger)
 
                         # visualizer update
@@ -483,17 +441,12 @@ def main(args):
                             zero = False
                         
                         if current_idx != current_idx_last:
-                            gripper_xyz_delta_mm = np.linalg.norm(gripper_delta_pose[:3, 3]) * 1000
-                            gripper_quat_delta_deg = np.arccos(np.clip((np.trace(gripper_delta_pose[:3, :3]) - 1) / 2, -1, 1)) / np.pi * 180
                             pyft_xyz_delta_mm = np.linalg.norm(pyft_delta_pose[:3, 3]) * 1000
                             pyft_quat_delta_deg = np.arccos(np.clip((np.trace(pyft_delta_pose[:3, :3]) - 1) / 2, -1, 1)) / np.pi * 180
                             angler_width_delta_mm = abs(angler_width - angler_width_last) * 1000
                             pyft_f_delta_n = np.linalg.norm(pyft_delta_f)
                             pyft_t_delta = np.linalg.norm(pyft_delta_t)
-                            ### print(gripper_xyz_delta_mm)
 
-                            gripper_xyz_deltas.append(gripper_xyz_delta_mm)
-                            gripper_quat_deltas.append(gripper_quat_delta_deg)
                             pyft_xyz_deltas.append(pyft_xyz_delta_mm)
                             pyft_quat_deltas.append(pyft_quat_delta_deg)
                             angler_width_deltas.append(angler_width_delta_mm)

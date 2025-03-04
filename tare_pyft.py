@@ -122,8 +122,8 @@ def main(args):
     pyft_poses = []
     for t265_pose in t265_poses:                                            # c2w
         t265_pose = np.linalg.inv(t265_initial_pose) @ t265_pose            # c2c0 = w2c0 @ c2w
-        t265_pose = T265r_2_BASE @ t265_pose                                # c2b = c02b @ c2c0
-        pyft_pose = t265_pose @ np.linalg.inv(T265r_2_PYFT)                 # f2b = c2b @ f2c
+        t265_pose = T265_2_BASE @ t265_pose                                 # c2b = c02b @ c2c0
+        pyft_pose = t265_pose @ np.linalg.inv(T265_2_PYFT)                  # f2b = c2b @ f2c
         pyft_poses.append(pyft_pose)
     mftarer = LinearMFTarer()
     for pyft_ft, pyft_pose in zip(pyft_fts, pyft_poses):
