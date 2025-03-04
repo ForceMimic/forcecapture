@@ -1,0 +1,17 @@
+data_path = ./post_peel_data/train
+save_path = ./post_peel_data/train/peel_shave_train.hdf5
+stage = shave
+pc_mesh = False
+ft_coord = False
+num_o = 1
+num_a = 20
+num_aa = 10
+pad_o = True
+pad_a = True
+pad_aa = True
+gripper_xyz_threshold = 0.003
+gripper_quat_threshold = 0
+pyft_xyz_threshold = 0.003
+pyft_quat_threshold = 0
+pyft_f_threshold = 3
+pyft_t_threshold = 0

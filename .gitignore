@@ -1,0 +1,9 @@
+__pycache__/
+
+.vscode/
+.idea/
+
+temp_data/
+pre_peel_data
+peel_data
+post_peel_data

@@ -1,0 +1,3 @@
+[submodule "r3kit"]
+	path = r3kit
+	url = git@github.com:ForceMimic/r3kit.git
