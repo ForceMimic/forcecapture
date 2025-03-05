@@ -1,2 +1,2 @@
-hdf5_path = ./post_peel_data/train/01/shave_00.hdf5
-pc_mesh = True
+hdf5_path = ./post_peel_data/03/shave_00.hdf5
+pc_mesh = False

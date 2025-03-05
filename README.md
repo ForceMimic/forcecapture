@@ -63,6 +63,9 @@ python merge_hdf5.py --config configs/merge.txt
 python visualize_merge.py --config configs/visualize_merge.txt
 ```
 
+## Example Data
+You can download our processed dataset from [Google Drive](https://drive.google.com/drive/folders/1sKqOj9tO-luddM8XIaJvTFbRSEZet7C3?usp=sharing).
+
 ---
 
 ## Acknowledgement

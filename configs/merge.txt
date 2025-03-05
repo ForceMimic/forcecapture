@@ -1,5 +1,5 @@
-data_path = ./post_peel_data/train
-save_path = ./post_peel_data/train/peel_shave_train.hdf5
+data_path = ./post_peel_data
+save_path = ./post_peel_data/v1.0.s.hdf5
 stage = shave
 pc_mesh = False
 ft_coord = False
